@@ -2,6 +2,12 @@ name: Flutter Tag Build
 
 on:
   workflow_dispatch:
+    inputs:
+      perfil:
+        description: 'Perfil do cliente'
+        type: choice
+        options: [tecnico, cliente]
+        default: tecnico
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
@@ -11,9 +17,12 @@ on:
 
 jobs:
   run-flutter-tag-build:
+    # SYSGA: em fork o GITHUB_TOKEN e somente leitura por padrao, e o job aninhado
+    # generate-sbom pede 'contents: write' -> a execucao falha no arranque.
+    permissions:
+      contents: write
     uses: ./.github/workflows/flutter-build.yml
     secrets: inherit
     with:
       upload-artifact: true
       upload-tag: ${{ github.ref_name }}
-      publish-update-metadata: ${{ github.repository == 'rustdesk/rustdesk' }}
