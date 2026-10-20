@@ -72,6 +72,8 @@ env:
   # for arm64 linux because official Dart SDK does not work
   FLUTTER_ELINUX_VERSION: "3.16.9"
   TAG_NAME: "${{ inputs.upload-tag }}"
+  # SYSGA: nome do app POR PERFIL, para os dois conviverem na mesma maquina
+  SYSGA_APP_NAME: "${{ inputs.sysga-perfil == 'cliente' && 'SysgaSuporte' || 'SysgaTecnico' }}"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   # vcpkg version: 2026.07.29
   # If we change the `VCPKG COMMIT_ID`, please remember:
@@ -143,16 +145,6 @@ jobs:
           submodules: recursive
 
 
-      - name: Aplicar configuracao SYSGA
-        shell: bash
-        env:
-          SYSGA_RD_HOST:       ${{ secrets.SYSGA_RD_HOST }}
-          SYSGA_RD_KEY:        ${{ secrets.SYSGA_RD_KEY }}
-          SYSGA_RD_PORT_ID:    ${{ secrets.SYSGA_RD_PORT_ID }}
-          SYSGA_RD_PORT_RELAY: ${{ secrets.SYSGA_RD_PORT_RELAY }}
-          SYSGA_RD_API:        ${{ secrets.SYSGA_RD_API }}
-          SYSGA_RD_PERFIL:     ${{ inputs.sysga-perfil }}
-        run: bash aplicar-config-sysga.sh
 
       - name: Restore bridge files
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -254,6 +246,18 @@ jobs:
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           prefix-key: ${{ matrix.job.os }}
+
+      - name: Aplicar configuracao SYSGA
+        shell: bash
+        env:
+          SYSGA_RD_HOST:       ${{ secrets.SYSGA_RD_HOST }}
+          SYSGA_RD_KEY:        ${{ secrets.SYSGA_RD_KEY }}
+          SYSGA_RD_PORT_ID:    ${{ secrets.SYSGA_RD_PORT_ID }}
+          SYSGA_RD_PORT_RELAY: ${{ secrets.SYSGA_RD_PORT_RELAY }}
+          SYSGA_RD_API:        ${{ secrets.SYSGA_RD_API }}
+          SYSGA_RD_PERFIL:     ${{ inputs.sysga-perfil }}
+          SYSGA_APP_NAME:      ${{ env.SYSGA_APP_NAME }}
+        run: bash aplicar-config-sysga.sh
 
       - name: Setup vcpkg with Github Actions binary cache
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
@@ -374,7 +378,7 @@ jobs:
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
           pip3 install -r requirements.txt
-          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/SysgaSuporte.exe
+          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/${{ env.SYSGA_APP_NAME }}.exe
           popd
           mkdir -p ./SignOutput
           mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.exe
@@ -395,7 +399,7 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
           pushd ./res/msi
-          python preprocess.py --arp --app-name "SysgaSuporte" -d ../../rustdesk
+          python preprocess.py --arp --app-name "${{ env.SYSGA_APP_NAME }}" -d ../../rustdesk
           nuget restore msi.sln
           $msiPlatform = if ('${{ matrix.job.arch }}' -eq 'aarch64') { 'ARM64' } else { 'x64' }
           msbuild msi.sln -p:Configuration=Release -p:Platform=$msiPlatform /p:TargetVersion=Windows10
@@ -425,7 +429,7 @@ jobs:
         run: |
           git checkout -- res/msi
           cp -r ./rustdesk ./rustdesk-msi-template
-          mv ./rustdesk-msi-template/SysgaSuporte.exe ./rustdesk-msi-template/RDAPPNAM.exe
+          mv ./rustdesk-msi-template/${{ env.SYSGA_APP_NAME }}.exe ./rustdesk-msi-template/RDAPPNAM.exe
           Set-Content -Path ./rustdesk-msi-template/custom.txt -Value 'placeholder' -NoNewline
           $assets = './rustdesk-msi-template/data/flutter_assets/assets'
           New-Item -ItemType Directory -Force -Path $assets | Out-Null

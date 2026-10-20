@@ -161,7 +161,7 @@ fi
 # --- SYSGA_IDENTIDADE: nome proprio do app, para CONVIVER com o RustDesk antigo ---
 # Governa: pasta de config (e portanto o ID), pipe de IPC, nome do servico,
 # caminho de instalacao, chave do registro, nome do exe e o UpgradeCode do MSI.
-APP_NAME="SysgaSuporte"
+APP_NAME="${SYSGA_APP_NAME:-SysgaSuporte}"
 echo
 echo "=== identidade do aplicativo ==="
 python3 - "$APP_NAME" <<'PYEOF_ID'
@@ -199,6 +199,18 @@ if falhou:
     sys.exit(1)
 print("  ok  identidade aplicada: %s" % nome)
 PYEOF_ID
+
+# --- SYSGA_FORCA_RECOMPILA: o cache do Rust restaura target/ e o cargo pode
+# considerar o hbb_common "fresco", ignorando o patch. Forcar a recompilacao.
+echo
+echo "=== forcando recompilacao dos crates patcheados ==="
+touch libs/hbb_common/src/config.rs src/common.rs 2>/dev/null || true
+if command -v cargo >/dev/null 2>&1; then
+  cargo clean -p hbb_common 2>&1 | tail -2 | sed 's/^/  /' || true
+  echo "  ok  cargo clean -p hbb_common"
+else
+  echo "  !! cargo indisponivel neste ponto (patch roda antes do toolchain?)"
+fi
 
 echo
 echo "=== conferencia final ==="
