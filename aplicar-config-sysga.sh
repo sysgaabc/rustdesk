@@ -158,6 +158,38 @@ print("  ok  HARD_SETTINGS do perfil '%s': %d trava(s)" % (perfil, len(travas)))
 PYEOF2
 fi
 
+# --- SYSGA_RODAPE: "Desenvolvido por RustDesk" -> "Suporte SYSGA" ---
+# E marca, nao aviso legal: copyright e licenca seguem na tela Sobre (exigencia AGPL).
+# Texto literal, nao traduzido, para valer em qualquer idioma do cliente.
+echo
+echo "=== rodape do aplicativo ==="
+python3 - <<'PYEOF_RD'
+import sys, pathlib
+p = pathlib.Path("flutter/lib/common.dart")
+if not p.exists(): sys.exit("ABORTADO: common.dart nao existe")
+s = p.read_text(encoding="utf-8")
+trocas = [
+    ("launchUrl(Uri.parse('https://rustdesk.com'))", "launchUrl(Uri.parse('https://sysga.com.br'))", "link do rodape"),
+    ('translate("powered_by_me")', "'Suporte SYSGA'", "texto do rodape"),
+]
+feito = 0
+for velho, novo, rotulo in trocas:
+    if novo in s:
+        print("  --  %s ja aplicado" % rotulo); continue
+    n = s.count(velho)
+    if n != 1:
+        sys.exit("ABORTADO: '%s' com %d ocorrencias (esperado 1)" % (rotulo, n))
+    s = s.replace(velho, novo, 1); feito += 1
+if feito:
+    p.write_text(s, encoding="utf-8")
+    c = p.read_text(encoding="utf-8")
+    if "'Suporte SYSGA'" not in c or "sysga.com.br" not in c:
+        sys.exit("ABORTADO: gravou mas nao conferiu")
+    if 'translate("powered_by_me")' in c:
+        sys.exit("ABORTADO: o texto antigo continua la")
+    print("  ok  rodape -> 'Suporte SYSGA' (link sysga.com.br)")
+PYEOF_RD
+
 # --- SYSGA_IDENTIDADE: nome proprio do app, para CONVIVER com o RustDesk antigo ---
 # Governa: pasta de config (e portanto o ID), pipe de IPC, nome do servico,
 # caminho de instalacao, chave do registro, nome do exe e o UpgradeCode do MSI.
