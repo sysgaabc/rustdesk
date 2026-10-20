@@ -9,10 +9,32 @@ on:
       upload-tag:
         type: string
         default: "nightly"
-    # SYSGA: em workflow reutilizavel os secrets precisam ser declarados, senao a
-    # execucao falha no arranque (startup_failure) antes de qualquer job.
-    # Opcionais: chamadores que nao passam 'secrets: inherit' seguem validos.
+    # SYSGA: workflow reutilizavel precisa declarar TODOS os secrets que usa.
+    # Declarar so alguns invalida o arquivo (startup_failure). Todos opcionais
+    # para nao quebrar chamadores sem 'secrets: inherit' (caso do flutter-ci.yml).
     secrets:
+      ANDROID_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
+      ANDROID_KEY_STORE_PASSWORD:
+        required: false
+      ANDROID_SIGNING_KEY:
+        required: false
+      MACOS_CODESIGN_IDENTITY:
+        required: false
+      MACOS_NOTARIZE_JSON:
+        required: false
+      MACOS_P12_BASE64:
+        required: false
+      MACOS_P12_PASSWORD:
+        required: false
+      SIGN_BASE_URL:
+        required: false
+      SIGN_SECRET_KEY:
+        required: false
+      SYSGA_RD_API:
+        required: false
       SYSGA_RD_HOST:
         required: false
       SYSGA_RD_KEY:
@@ -20,8 +42,6 @@ on:
       SYSGA_RD_PORT_ID:
         required: false
       SYSGA_RD_PORT_RELAY:
-        required: false
-      SYSGA_RD_API:
         required: false
 
 # NOTE: F-Droid builder script 'flutter/build_fdroid.sh' reads environment
