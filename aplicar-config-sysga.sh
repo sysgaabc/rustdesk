@@ -91,6 +91,37 @@ trocar "$COMMON" \
   "    \"$API\".to_owned()" \
   "api-server padrao"
 
+# --- OVERWRITE_SETTINGS: FORCA a configuracao sobre qualquer config salva ---
+# Sem isto, as constantes trocadas acima sao apenas PADRAO: uma maquina que ja
+# teve RustDesk tem config em %APPDATA% que vence o padrao. O caminho oficial
+# (read_custom_client) exige blob ASSINADO pela RustDesk -- por isso o gerador
+# de cliente e exclusivo do Pro. Em fork, preenchemos a tabela direto no init.
+if grep -q "SYSGA_FORCA_CONFIG" "$COMMON"; then
+  echo "  --  OVERWRITE_SETTINGS ja aplicado"
+else
+  python3 - "$COMMON" "$HOST" "$PORT_ID" "$PORT_RELAY" "$KEY" "$API" <<'PYEOF'
+import sys
+arq, host, pid, prelay, key, api = sys.argv[1:7]
+s = open(arq, encoding="utf-8").read()
+anc = "pub fn global_init() -> bool {\n"
+if s.count(anc) != 1:
+    sys.exit("ABORTADO: global_init com %d ocorrencias" % s.count(anc))
+bloco = (
+    '    // SYSGA_FORCA_CONFIG: impoe o servidor da SYSGA sobre qualquer config\n'
+    '    // existente em %%APPDATA%%, e trava os campos na tela de Rede.\n'
+    '    {\n'
+    '        let mut o = config::OVERWRITE_SETTINGS.write().unwrap();\n'
+    '        o.insert("custom-rendezvous-server".to_owned(), "%s:%s".to_owned());\n'
+    '        o.insert("relay-server".to_owned(), "%s:%s".to_owned());\n'
+    '        o.insert("key".to_owned(), "%s".to_owned());\n'
+    '        o.insert("api-server".to_owned(), "%s".to_owned());\n'
+    '    }\n'
+) % (host, pid, host, prelay, key, api)
+open(arq, "w", encoding="utf-8").write(s.replace(anc, anc + bloco, 1))
+print("  ok  OVERWRITE_SETTINGS injetado em global_init")
+PYEOF
+fi
+
 echo
 echo "=== conferencia final ==="
 grep -nE "RENDEZVOUS_SERVERS|RS_PUB_KEY|RENDEZVOUS_PORT:|RELAY_PORT:" "$CFG" | sed 's/^/  /'
