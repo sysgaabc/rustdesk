@@ -158,6 +158,48 @@ print("  ok  HARD_SETTINGS do perfil '%s': %d trava(s)" % (perfil, len(travas)))
 PYEOF2
 fi
 
+# --- SYSGA_IDENTIDADE: nome proprio do app, para CONVIVER com o RustDesk antigo ---
+# Governa: pasta de config (e portanto o ID), pipe de IPC, nome do servico,
+# caminho de instalacao, chave do registro, nome do exe e o UpgradeCode do MSI.
+APP_NAME="SysgaSuporte"
+echo
+echo "=== identidade do aplicativo ==="
+python3 - "$APP_NAME" <<'PYEOF_ID'
+import sys, pathlib
+nome = sys.argv[1]
+alvos = [
+    ("libs/hbb_common/src/config.rs",
+     'RwLock::new("RustDesk".to_owned())',
+     'RwLock::new("%s".to_owned())' % nome,
+     "APP_NAME (config, pipe, servico, registro)"),
+    ("flutter/windows/CMakeLists.txt",
+     'set(BINARY_NAME "rustdesk")',
+     'set(BINARY_NAME "%s")' % nome,
+     "nome do executavel"),
+    ("flutter/windows/runner/main.cpp",
+     'std::wstring app_name = L"RustDesk";',
+     'std::wstring app_name = L"%s";' % nome,
+     "mutex da janela"),
+]
+falhou = False
+for arq, velho, novo, desc in alvos:
+    p = pathlib.Path(arq)
+    if not p.exists():
+        print("  !! ARQUIVO AUSENTE: %s" % arq); falhou = True; continue
+    t = p.read_text(encoding="utf-8")
+    if novo in t:
+        print("  ok  %-42s (ja aplicado)" % desc); continue
+    if velho not in t:
+        print("  !! TRECHO NAO ENCONTRADO em %s -> %s" % (arq, velho)); falhou = True; continue
+    p.write_text(t.replace(velho, novo, 1), encoding="utf-8")
+    if novo not in p.read_text(encoding="utf-8"):
+        print("  !! GRAVOU MAS NAO CONFERIU: %s" % arq); falhou = True; continue
+    print("  ok  %-42s -> %s" % (desc, nome))
+if falhou:
+    sys.exit(1)
+print("  ok  identidade aplicada: %s" % nome)
+PYEOF_ID
+
 echo
 echo "=== conferencia final ==="
 grep -nE "RENDEZVOUS_SERVERS|RS_PUB_KEY|RENDEZVOUS_PORT:|RELAY_PORT:" "$CFG" | sed 's/^/  /'

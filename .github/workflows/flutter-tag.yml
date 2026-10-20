@@ -25,5 +25,6 @@ jobs:
     secrets: inherit
     with:
       upload-artifact: true
-      upload-tag: ${{ github.ref_name }}
+      # SYSGA: tag POR PERFIL, senao o build seguinte sobrescreve o .exe do anterior
+      upload-tag: ${{ github.ref_name }}-${{ inputs.perfil || 'tecnico' }}
       sysga-perfil: ${{ inputs.perfil || 'tecnico' }}
