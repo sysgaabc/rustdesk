@@ -11,6 +11,10 @@ on:
 
 jobs:
   run-flutter-tag-build:
+    # SYSGA: em fork o GITHUB_TOKEN e somente leitura por padrao, e o job aninhado
+    # generate-sbom pede 'contents: write' -> a execucao falha no arranque.
+    permissions:
+      contents: write
     uses: ./.github/workflows/flutter-build.yml
     secrets: inherit
     with:
