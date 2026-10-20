@@ -2,6 +2,12 @@ name: Flutter Tag Build
 
 on:
   workflow_dispatch:
+    inputs:
+      perfil:
+        description: 'Perfil do cliente'
+        type: choice
+        options: [tecnico, cliente]
+        default: tecnico
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
