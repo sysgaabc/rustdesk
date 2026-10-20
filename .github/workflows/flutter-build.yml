@@ -9,6 +9,20 @@ on:
       upload-tag:
         type: string
         default: "nightly"
+    # SYSGA: em workflow reutilizavel os secrets precisam ser declarados, senao a
+    # execucao falha no arranque (startup_failure) antes de qualquer job.
+    # Opcionais: chamadores que nao passam 'secrets: inherit' seguem validos.
+    secrets:
+      SYSGA_RD_HOST:
+        required: false
+      SYSGA_RD_KEY:
+        required: false
+      SYSGA_RD_PORT_ID:
+        required: false
+      SYSGA_RD_PORT_RELAY:
+        required: false
+      SYSGA_RD_API:
+        required: false
 
 # NOTE: F-Droid builder script 'flutter/build_fdroid.sh' reads environment
 # variables from this workflow!
